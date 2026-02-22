@@ -3,12 +3,99 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Zachary's Projects</title>
-  <style>
-
-  </style>
+  <title>Zickedy</title>
 </head>
-<body>
+<body style="font-family: system-ui, sans-serif; max-width: 900px; margin: 0 auto; padding: 2rem;">
+
+<h1>Zickedy Repo Files</h1>
+
+<!-- Search bar -->
+<input type="text" id="searchInput" placeholder="Search files..." onkeyup="filterItems()" style="width:100%; padding:8px; margin:1rem 0; font-size:1rem; box-sizing:border-box;">
+
+<!-- Scrollable container -->
+<div id="scrollContainer" style="overflow-x:auto; white-space:nowrap; padding:1rem 0; border:1px solid #000; border-radius:8px;">
+  <div id="itemsList" style="display:inline-flex; gap:1rem; padding:0 1rem;">
+    <!-- Files loaded here -->
+  </div>
+</div>
+
+<!-- README display -->
+<div id="readmeContent" style="margin-top:2rem; padding:1rem; border:1px solid #000; border-radius:8px; white-space:pre-wrap;"></div>
+
+<script>
+  async function loadRepoData() {
+    const listContainer = document.getElementById('itemsList');
+    const readmeDiv = document.getElementById('readmeContent');
+    listContainer.innerHTML = '<p>Loading repo files...</p>';
+
+    try {
+      const contentsRes = await fetch('https://api.github.com/repos/zickedy/zickedy/contents', {
+        headers: { 'Accept': 'application/vnd.github.v3+json' }
+      });
+
+      if (!contentsRes.ok) {
+        throw new Error(`API failed: ${contentsRes.status} ${contentsRes.statusText}`);
+      }
+
+      const files = await contentsRes.json();
+
+      listContainer.innerHTML = '';
+
+      if (!Array.isArray(files) || files.length === 0) {
+        listContainer.innerHTML = '<p>No files found in root.</p>';
+      } else {
+        files.forEach(item => {
+          if (item.type !== 'file') return;
+
+          const card = document.createElement('a');
+          card.href = item.html_url;
+          card.target = '_blank';
+          card.style.display = 'inline-block';
+          card.style.minWidth = '220px';
+          card.style.padding = '1rem';
+          card.style.border = '1px solid #000';
+          card.style.borderRadius = '6px';
+          card.style.textDecoration = 'none';
+          card.style.color = '#000';
+          card.style.textAlign = 'center';
+
+          const name = item.name;
+          const label = name === 'index.html' ? 'This Site (index.html)' : name;
+
+          card.innerHTML = `
+              <h3 style="margin:0 0 0.5rem;">${label}</h3>
+              <p style="margin:0; font-size:0.9rem;">File – ${Math.round(item.size / 1024)} KB</p>
+            `;
+
+          listContainer.appendChild(card);
+        });
+      }
+
+      const readmeRes = await fetch('https://raw.githubusercontent.com/zickedy/zickedy/main/README.md');
+      if (readmeRes.ok) {
+        const text = await readmeRes.text();
+        readmeDiv.innerHTML = `<h2>README.md</h2><pre style="margin:0;">${text}</pre>`;
+      } else {
+        readmeDiv.innerHTML = '<p>README load failed.</p>';
+      }
+
+    } catch (err) {
+      listContainer.innerHTML = `<p>Error loading: ${err.message}</p>`;
+      readmeDiv.innerHTML = '<p>README error.</p>';
+    }
+  }
+
+  function filterItems() {
+    const input = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.getElementsByClassName('item-card') || [];
+    Array.from(cards).forEach(card => {
+      const text = card.textContent.toLowerCase();
+      card.style.display = text.includes(input) ? 'inline-block' : 'none';
+    });
+  }
+
+  document.addEventListener('DOMContentLoaded', loadRepoData);
+</script>
 
 </body>
 </html>
