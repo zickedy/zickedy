@@ -1,4 +1,4 @@
-## Hi there 👋
+## uhhh hi this is my stuff and stuff and ya :o
 
 <!--
 **zickedy/zickedy** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
