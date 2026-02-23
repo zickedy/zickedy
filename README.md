@@ -1,4 +1,5 @@
 ## uhhh hi this is my stuff and stuff and ya :o
+## yes im vibe coding because ya and ya but still making it my ownn just need frame work n stuff and change it myself n have it teach me andd ya 
 
 <!--
 **zickedy/zickedy** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
