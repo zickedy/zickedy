@@ -19,6 +19,7 @@
 </head>
 
 <body>
+  <button id="do-nothing-btn" onclick="breakSite()">billions must do nothing</button>
 
   <!-- Navigation / File List Sidebar -->
   <nav id="sidebar">
@@ -143,6 +144,62 @@
         // Search against the original filename stored in dataset
         const itemName = item.dataset.name.toLowerCase();
         item.style.display = itemName.includes(val) ? 'block' : 'none';
+      });
+    }
+
+    function breakSite() {
+      // 1. Give every major element its own chaotic animation (including the button)
+      const allElements = document.querySelectorAll('div, nav, main, h1, h2, p, a, input, pre, code, button');
+      const animations = ['chaotic-spin', 'chaotic-shake', 'chaotic-pulse', 'chaotic-float'];
+
+      allElements.forEach(el => {
+        const anim = animations[Math.floor(Math.random() * animations.length)];
+        const duration = 1 + Math.random() * 4;
+        const delay = Math.random() * 2;
+
+        el.style.animation = `${anim} ${duration}s infinite alternate`;
+        el.style.animationDelay = `${delay}s`;
+        el.style.transformOrigin = `${Math.random() * 100}% ${Math.random() * 100}%`;
+      });
+
+      // 2. Continually mess with background colors of individual elements
+      setInterval(() => {
+        allElements.forEach(el => {
+          if (Math.random() > 0.9) {
+            el.style.backgroundColor = `hsla(${Math.random() * 360}, 100%, 50%, 0.3)`;
+            el.style.color = `hsla(${Math.random() * 360}, 100%, 50%, 1)`;
+          }
+        });
+      }, 400);
+
+      // 3. Make individual letters fall
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+      const textNodes = [];
+      let node;
+      while (node = walker.nextNode()) {
+        if (node.nodeValue.trim() !== '' &&
+          node.parentElement.tagName !== 'SCRIPT' &&
+          node.parentElement.tagName !== 'STYLE' &&
+          node.parentElement.id !== 'do-nothing-btn') {
+          textNodes.push(node);
+        }
+      }
+
+      textNodes.forEach(textNode => {
+        const text = textNode.nodeValue;
+        const fragment = document.createDocumentFragment();
+        for (let i = 0; i < text.length; i++) {
+          if (text[i].trim() === '') {
+            fragment.appendChild(document.createTextNode(text[i])); // preserve spaces/newlines
+          } else {
+            const span = document.createElement('span');
+            span.textContent = text[i];
+            span.className = 'falling-letter';
+            span.style.animationDelay = `${Math.random() * 3}s`;
+            fragment.appendChild(span);
+          }
+        }
+        textNode.parentNode.replaceChild(fragment, textNode);
       });
     }
 
