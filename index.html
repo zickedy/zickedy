@@ -1,75 +1,155 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Zickedy</title>
+  <title>Zach's Second Brain</title>
+
+  <!-- Modern Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Core Styles -->
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Marked.js for Markdown Rendering -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
-<body style="margin:0; padding:2rem; font-family:system-ui,sans-serif; background:#fff; color:#000; max-width:800px; margin-left:auto; margin-right:auto;">
 
-<input
-        type="text"
-        id="search"
-        placeholder="Search files"
-        onkeyup="filter()"
-        style="width:100%; padding:0.8rem; font-size:1rem; border:1px solid #000; margin-bottom:1.5rem; box-sizing:border-box;"
->
+<body>
 
-<div style="max-height:60vh; overflow-y:auto; border:1px solid #000; padding:1rem;">
-  <div id="list"></div>
-</div>
+  <!-- Navigation / File List Sidebar -->
+  <nav id="sidebar">
+    <div class="sidebar-header">
+      <h1>Zickedy Hub</h1>
+      <input type="text" id="search" placeholder="Search notes..." onkeyup="filterFiles()">
+    </div>
 
-<script>
-  async function load() {
-    const list = document.getElementById('list');
-    list.innerHTML = 'Loading...';
+    <div id="list-container">
+      <div id="list">
+        <!-- Files will be injected here -->
+      </div>
+    </div>
+  </nav>
 
-    try {
-      const res = await fetch('https://api.github.com/repos/zickedy/zickedy/contents');
-      if (!res.ok) throw new Error(res.status);
-      const files = await res.json();
+  <!-- Main Note Reading Area -->
+  <main id="main-content">
+    <div id="content-viewer">
+      <div class="empty-state">
+        <h2>Welcome to your Second Brain</h2>
+        <p>Select a note from the sidebar to begin reading.</p>
+      </div>
+    </div>
+  </main>
 
+  <script>
+    // Configuration
+    const REPO_API_URL = 'https://api.github.com/repos/zickedy/zickedy/contents';
+    const RAW_BASE_URL = 'https://raw.githubusercontent.com/zickedy/zickedy/main/';
+
+    // State
+    let currentFiles = [];
+
+    async function init() {
+      const list = document.getElementById('list');
+      list.innerHTML = '<div style="padding: 1rem; color: #8b949e;">Loading ecosystem...</div>';
+
+      try {
+        const res = await fetch(REPO_API_URL);
+        if (!res.ok) throw new Error(res.status);
+
+        currentFiles = await res.json();
+        renderSidebar(currentFiles);
+
+      } catch (e) {
+        list.innerHTML = `<div style="padding: 1rem; color: #f85149;">Error connecting to Hub: ${e.message}</div>`;
+      }
+    }
+
+    function renderSidebar(files) {
+      const list = document.getElementById('list');
       list.innerHTML = '';
 
-      files.forEach(f => {
-        if (f.type !== 'file') return;
+      const fileNodes = files.filter(f => f.type === 'file');
 
-        const a = document.createElement('a');
-        a.href = f.html_url;
-        a.target = '_blank';
-        a.style.display = 'block';
-        a.style.padding = '1rem';
-        a.style.border = '1px solid #000';
-        a.style.marginBottom = '0.8rem';
-        a.style.textDecoration = 'none';
-        a.style.color = '#000';
-
-        const name = f.name === 'index.html' ? 'This Site (index.html)' : f.name;
-
-        a.innerHTML = `<strong>${name}</strong><br><small>File – ${Math.round(f.size/1024)} KB</small>`;
-        list.appendChild(a);
-      });
-
-      if (files.length === 0) {
-        list.innerHTML = '<p>No files in root.</p>';
+      if (fileNodes.length === 0) {
+        list.innerHTML = '<div style="padding: 1rem; color: #8b949e;">No notes found.</div>';
+        return;
       }
 
-    } catch (e) {
-      list.innerHTML = 'Error: ' + e.message;
+      fileNodes.forEach(f => {
+        const a = document.createElement('a');
+
+        // Clean up display names (remove extension for .md files for cleaner look)
+        let displayName = f.name;
+        if (displayName.endsWith('.md')) {
+          displayName = displayName.replace('.md', '');
+        }
+
+        a.innerHTML = `<strong>${displayName}</strong>`;
+        a.dataset.name = f.name; // Keep original name for search
+
+        // Handle clicking a file
+        a.onclick = (e) => {
+          e.preventDefault();
+
+          // UI State updates
+          document.querySelectorAll('#list a').forEach(el => el.classList.remove('active'));
+          a.classList.add('active');
+
+          // Load Content
+          loadContent(f);
+        };
+
+        list.appendChild(a);
+      });
     }
-  }
 
-  function filter() {
-    const val = document.getElementById('search').value.toLowerCase();
-    const items = document.querySelectorAll('#list a');
+    async function loadContent(fileData) {
+      const viewer = document.getElementById('content-viewer');
+      viewer.innerHTML = '<div class="empty-state">Loading node...</div>';
 
-    items.forEach(item => {
-      item.style.display = item.textContent.toLowerCase().includes(val) ? 'block' : 'none';
-    });
-  }
+      try {
+        // Fetch raw content
+        const res = await fetch(fileData.download_url);
+        if (!res.ok) throw new Error("Failed to load content.");
 
-  document.addEventListener('DOMContentLoaded', load);
-</script>
+        const rawContent = await res.text();
+
+        // If it's a markdown file, parse it. Otherwise, put it in a pre block.
+        if (fileData.name.endsWith('.md')) {
+          viewer.innerHTML = `<div class="markdown-body">${marked.parse(rawContent)}</div>`;
+        } else if (fileData.name.endsWith('.html') || fileData.name.endsWith('.css') || fileData.name.endsWith('.js')) {
+          // Escape HTML for code files so they show as text, not raw rendered HTML by accident
+          const escaped = rawContent.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          viewer.innerHTML = `<pre><code>${escaped}</code></pre>`;
+        } else {
+          // General fallback
+          viewer.innerHTML = `<pre><code>${rawContent}</code></pre>`;
+        }
+
+      } catch (error) {
+        viewer.innerHTML = `<div class="empty-state" style="color:#f85149;"><h2>Error linking node</h2><p>${error.message}</p></div>`;
+      }
+    }
+
+    function filterFiles() {
+      const val = document.getElementById('search').value.toLowerCase();
+      const items = document.querySelectorAll('#list a');
+
+      items.forEach(item => {
+        // Search against the original filename stored in dataset
+        const itemName = item.dataset.name.toLowerCase();
+        item.style.display = itemName.includes(val) ? 'block' : 'none';
+      });
+    }
+
+    // Boot the app
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
 
 </body>
+
 </html>
