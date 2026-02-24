@@ -89,7 +89,9 @@
           displayName = displayName.replace('.md', '');
         }
 
-        a.innerHTML = `<strong>${displayName}</strong>`;
+        const strong = document.createElement('strong');
+        strong.textContent = displayName;
+        a.appendChild(strong);
         a.dataset.name = f.name; // Keep original name for search
 
         // Handle clicking a file
@@ -128,7 +130,12 @@
           viewer.innerHTML = `<pre><code>${escaped}</code></pre>`;
         } else {
           // General fallback
-          viewer.innerHTML = `<pre><code>${rawContent}</code></pre>`;
+          const pre = document.createElement('pre');
+          const code = document.createElement('code');
+          code.textContent = rawContent;
+          pre.appendChild(code);
+          viewer.innerHTML = '';
+          viewer.appendChild(pre);
         }
 
       } catch (error) {
