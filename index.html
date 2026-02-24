@@ -50,9 +50,6 @@
     const REPO_API_URL = 'https://api.github.com/repos/zickedy/zickedy/contents';
     const RAW_BASE_URL = 'https://raw.githubusercontent.com/zickedy/zickedy/main/';
 
-    // State
-    let currentFiles = [];
-
     async function init() {
       const list = document.getElementById('list');
       list.innerHTML = '<div style="padding: 1rem; color: #8b949e;">Loading ecosystem...</div>';
@@ -61,7 +58,7 @@
         const res = await fetch(REPO_API_URL);
         if (!res.ok) throw new Error(res.status);
 
-        currentFiles = await res.json();
+        const currentFiles = await res.json();
         renderSidebar(currentFiles);
 
       } catch (e) {
